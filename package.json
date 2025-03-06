@@ -1,0 +1,21 @@
+{
+  "name": "tiktok-content-ai",
+  "version": "1.0.0",
+  "description": "TikTok content scraper and processor",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@huggingface/inference": "^3.4.1",
+    "axios": "^1.8.1",
+    "dotenv": "^16.4.7",
+    "fluent-ffmpeg": "^2.1.3",
+    "node-fetch": "^2.7.0",
+    "playwright": "^1.35.0",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "youtube-dl-exec": "^3.0.16"
+  }
+}
