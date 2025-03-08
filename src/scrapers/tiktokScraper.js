@@ -5,8 +5,9 @@ const { saveJSON } = require("../../utils/fileUtils");
 const config = require("../../config");
 const path = require("path");
 const fs = require("fs").promises;
-const AudioExtractor = require("../media-processing/audioExtractor");
-const VideoDownloader = require("../media-processing/videoDownloader");
+const AudioExtractor = require("../media-processing/audio-processing/audioExtractor");
+const VideoDownloader = require("../media-processing/video-processing/videoDownloader");
+const processAudio = require("../media-processing/audio-processing/processAudio");
 
 const SELECTORS = {
   SEARCH_RESULTS: 'div[data-e2e="user-post-item-list"]',
@@ -54,8 +55,6 @@ class TikTokScraper extends BaseScraper {
       const videos = await this.scrapeVideoDetails(videoUrls);
 
       await this.saveScrapedData(videos);
-
-      console.log(videos);
       return videos;
     } finally {
       await this.close();
@@ -101,41 +100,6 @@ class TikTokScraper extends BaseScraper {
     await this.page.waitForTimeout(300);
   }
 
-  // async extractVideoUrls(limit, isProfile) {
-  //   return this.page.evaluate(
-  //     ({ selectors, limit, isProfile }) => {
-  //       const selector = isProfile
-  //         ? selectors.PROFILE_VIDEOS
-  //         : selectors.VIDEO_LINKS;
-
-  //       return Array.from(document.querySelectorAll(selector))
-  //         .slice(0, limit)
-  //         .map((el) => {
-  //           const anchor = el.querySelector("a");
-  //           const url = anchor ? anchor.href : null;
-
-  //           if (!url) return null;
-
-  //           const match = url.match(/\/video\/(\d+)/);
-  //           const videoId = match ? match[1] : null;
-  //           const viewsElement = el.querySelector(
-  //             selectors.VIDEO_METADATA.VIEWS
-  //           );
-  //           const views = viewsElement ? viewsElement.innerText : null;
-
-  //           return videoId
-  //             ? {
-  //                 url,
-  //                 videoId,
-  //                 views,
-  //               }
-  //             : null;
-  //         })
-  //         .filter((item) => item !== null); // Remove null entries
-  //     },
-  //     { selectors: this.selectors, limit, isProfile }
-  //   );
-  // }
   async extractVideoUrls(limit, isProfile) {
     return this.page.evaluate(
       ({ selectors, limit, isProfile }) => {
@@ -213,6 +177,7 @@ class TikTokScraper extends BaseScraper {
           views,
           videoPath: media.videoPath,
           audioPath: media.audioPath,
+          transcript: media.transcript,
           processingStatus: "complete",
         };
 
@@ -243,39 +208,40 @@ class TikTokScraper extends BaseScraper {
   async downloadAndProcessMedia(downloader, url, videoId) {
     const MAX_RETRIES = 2;
     let retries = 0;
+    let videoPath;
 
     while (retries <= MAX_RETRIES) {
       try {
         // 1. Download video
-        const videoPath = await downloader.downloadVideo(url, videoId);
-
-        // 2. Verify video file exists
+        console.log(`⬇️ Downloading video: ${url}`);
+        videoPath = await downloader.downloadVideo(url, videoId);
         await fs.access(videoPath);
 
-        // 3. Initialize audio extractor
+        // 2. Process audio (extract + transcribe with Gemini)
         const audioExtractor = new AudioExtractor(
           path.join(this.instanceFolder, "audio")
         );
 
-        // 4. Extract audio
-        const audioPath = await audioExtractor.extract(videoPath, videoId);
+        const { audioPath, transcript } = await processAudio(
+          videoPath,
+          path.join(this.instanceFolder, "audio")
+        );
 
-        // 5. Verify audio file
-        await fs.access(audioPath);
-
-        return { videoPath, audioPath };
+        console.log(
+          `✅ Completed: Video: ${videoPath}, Audio: ${audioPath}, Transcript: ${transcript}`
+        );
+        return { videoPath, audioPath, transcript };
       } catch (error) {
         console.error(
-          `Media processing error (attempt ${retries + 1}):`,
+          `❌ Media processing error (attempt ${retries + 1}):`,
           error
         );
 
-        // Clean up failed files
+        // Cleanup failed downloads
         try {
           if (videoPath) await fs.unlink(videoPath);
-          if (audioPath) await fs.unlink(audioPath);
         } catch (cleanupError) {
-          console.warn("Cleanup failed:", cleanupError);
+          console.warn("⚠️ Cleanup failed:", cleanupError);
         }
 
         if (retries === MAX_RETRIES) throw error;

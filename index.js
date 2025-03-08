@@ -1,4 +1,4 @@
-const scraperFactory = require("./src/scrapers/scraperFactory");
+const getScrapper = require("./src/scrapers/scraperFactory");
 const ContentRepurposer = require("./src/workflows/contentRepurposer");
 const { getInput, getLimit } = require("./utils/inputUtils");
 
@@ -10,7 +10,7 @@ async function main() {
 
     // Get user-defined video limit
     const limit = await getLimit();
-    const scraper = scraperFactory(platform);
+    const scraper = getScrapper(platform);
     if (!scraper) {
       console.error(`❌ No scraper available for platform: ${platform}`);
       return;
@@ -28,8 +28,8 @@ async function main() {
         ...video,
         platform, // Pass platform info to processor
       });
-      console.log(`\n✅ Generated content for ${video.url}:`);
-      console.log(result.content);
+      // console.log(`\n✅ Generated content for ${video.url}:`);
+      // console.log(result.content);
     }
   } catch (error) {
     console.error("\n🚨 Main process error:", error.message);
