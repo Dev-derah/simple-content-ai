@@ -32,28 +32,46 @@ class TikTokScraper extends BaseScraper {
     this.instanceFolder = null;
   }
 
+
   async scrape(input, limit) {
     try {
       await this.initialize();
-      const normalizedInput = input.toLowerCase();
-      const isProfile = this.isProfileUrl(normalizedInput);
+      const contentType = input.contentType;
+      console.log("Content Type:", contentType);
 
-      // Create instance-specific folder structure
       this.instanceFolder = this.createInstanceFolder();
       await this.createFolderStructure();
 
-      await retryAsync(async () => {
-        await this.navigateToContent(input, isProfile);
-        await humanScroll(this.page);
-      }, 3);
+      let videoUrls;
 
-      const videoUrls = await this.extractVideoUrls(limit, isProfile);
-      if (videoUrls.length === 0) {
-        console.log("No videos found. Exiting gracefully.");
-        return [];
+      if (contentType === "video") {
+        const videoIdMatch = input.sanitized.match(/\/video\/(\d+)/);
+        if (!videoIdMatch) {
+          throw new Error("Invalid video URL: Video ID not found");
+        }
+        videoUrls = [
+          {
+            url: input.sanitized,
+            videoId: videoIdMatch[1],
+            views: null,
+          },
+        ];
+      } else {
+        // Handle profile or search
+        await retryAsync(async () => {
+          await this.navigateToContent(input, contentType);
+          await humanScroll(this.page);
+        }, 3);
+
+        const isProfile = contentType === "profile";
+        videoUrls = await this.extractVideoUrls(limit, isProfile);
+        if (videoUrls.length === 0) {
+          console.log("No videos found. Exiting gracefully.");
+          return [];
+        }
       }
-      const videos = await this.scrapeVideoDetails(videoUrls);
 
+      const videos = await this.scrapeVideoDetails(videoUrls);
       await this.saveScrapedData(videos);
       return videos;
     } finally {
@@ -80,19 +98,17 @@ class TikTokScraper extends BaseScraper {
     });
   }
 
-  isProfileUrl(url) {
-    return [
-      "https://tiktok.com/@",
-      "http://tiktok.com/@",
-      "https://www.tiktok.com/@",
-      "http://www.tiktok.com/@",
-    ].some((prefix) => url.startsWith(prefix));
-  }
-
-  async navigateToContent(input, isProfile) {
-    const url = isProfile
-      ? input
-      : `https://www.tiktok.com/search?q=${encodeURIComponent(input)}`;
+  async navigateToContent(input, contentType) {
+    let url;
+    if (contentType === "profile") {
+      url = input.sanitized;
+    } else if (contentType === "video") {
+      url = input.sanitized;
+    } else {
+      url = `https://www.tiktok.com/search?q=${encodeURIComponent(
+        input.sanitized
+      )}`;
+    }
     await this.page.goto(url, {
       waitUntil: "domcontentloaded",
       timeout: 60000,
