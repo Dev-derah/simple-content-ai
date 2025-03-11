@@ -7,7 +7,7 @@ async function main() {
     // Get user input
     const input = await getInput();
     const { sanitized, platform, contentType } = input;
-    console.log(input)
+
     // Get user-defined video limit
     const scraper = getScraper(platform);
     if (!scraper) {
@@ -28,13 +28,31 @@ async function main() {
     const videos = await scraper.scrape(input, limit);
 
     // Process videos
+    // Process videos
     for (const video of videos) {
-      const result = await repurposer.processVideo({
-        ...video,
-        platform, // Pass platform info to processor
-      });
-      // console.log(`\n✅ Generated content for ${video.url}:`);
-      // console.log(result.content);
+      try {
+        // Ensure we have the required content for repurposing
+        if (!video.transcript && !video.text && !video.caption) {
+          console.warn(`⚠️ Skipping video ${video.url} - No content available`);
+          continue;
+        }
+
+        const result = await repurposer.processContent({
+          // Map the TikTok transcript to the expected content fields
+          text: video.transcript || video.caption,
+          transcription: video.transcript, // For backwards compatibility
+          platform: platform,
+          url: video.url,
+          // Include other relevant metadata
+          hashtags: video.hashtags,
+          uploadDate: video.uploadDate,
+        });
+
+        console.log(`\n✅ Generated content for ${video.url}:`);
+        console.log(result.content);
+      } catch (error) {
+        console.error(`🚨 Error processing ${video.url}:`, error.message);
+      }
     }
   } catch (error) {
     console.error("\n🚨 Main process error:", error.message);

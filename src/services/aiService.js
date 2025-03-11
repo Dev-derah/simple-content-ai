@@ -1,24 +1,27 @@
-const { HfInference } = require("@huggingface/inference");
-const config = require("../../config");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const config = require('../../config')
 
 class AIService {
   constructor() {
-    this.hf = new HfInference(config.HF_API_KEY);
-  }
-
-  async transcribeAudio(audioData) {
-    return this.hf.automaticSpeechRecognition({
-      model: "openai/whisper-small",
-      data: audioData,
-    });
+    this.genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
+    this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
   }
 
   async generateContent(prompt) {
-    return this.hf.textGeneration({
-      model: "mistralai/Mistral-7B-Instruct-v0.2",
-      inputs: prompt,
-      parameters: { max_new_tokens: 500 },
-    });
+    try {
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      return {
+        generated_text: response.text(),
+        usage: {
+          promptTokens: response.usageMetadata.promptTokenCount,
+          generatedTokens: response.usageMetadata.candidatesTokenCount,
+        },
+      };
+    } catch (error) {
+      console.error("Gemini API Error:", error);
+      throw new Error("Failed to generate content");
+    }
   }
 }
 

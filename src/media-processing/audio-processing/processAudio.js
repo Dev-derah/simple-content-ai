@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs").promises;
 const AudioExtractor = require("./audioExtractor");
-const TranscriptionService = require("./transcriptionService");
+const TranscriptionService = require("../../content/transcriptionService");
 const config = require("../../../config/index");
 
 async function processAudio(videoPath, outputDir) {

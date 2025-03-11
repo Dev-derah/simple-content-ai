@@ -273,7 +273,7 @@ class TikTokScraper extends BaseScraper {
 
     while (retries <= MAX_RETRIES) {
       try {
-        await page.waitForSelector(this.selectors.VIDEO_METADATA.CAPTION, {
+        await page.waitForSelector(this.selectors.VIDEO_METADATA.LIKES, {
           timeout: 10000 * (retries + 1),
         });
         return await this.extractVideoMetadata(page);
@@ -288,8 +288,8 @@ class TikTokScraper extends BaseScraper {
 
   async extractVideoMetadata(page) {
     await page.waitForLoadState("domcontentloaded"); // Ensure initial load
-    await page.waitForSelector(this.selectors.VIDEO_METADATA.CAPTION, {
-      timeout: 10000,
+    await page.waitForSelector(this.selectors.VIDEO_METADATA.LIKES, {
+      timeout: 15000,
     }); // Wait for key element
 
     return page.evaluate((selectors) => {
