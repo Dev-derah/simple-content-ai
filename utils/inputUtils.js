@@ -28,17 +28,75 @@ const platformPatterns = {
 const validateInput = (input) => {
   const sanitizedInput = input.trim();
 
-  for (const [platform, patterns] of Object.entries(platformPatterns)) {
-    for (const [contentType, regex] of Object.entries(patterns)) {
+  // First check for exact platform matches based on domain
+  if (sanitizedInput.includes("tiktok.com")) {
+    for (const [contentType, regex] of Object.entries(
+      platformPatterns.tiktok
+    )) {
       if (regex.test(sanitizedInput)) {
         return {
           valid: true,
-          platform,
+          platform: "tiktok",
           contentType,
           sanitized: sanitizedInput,
         };
       }
     }
+  }
+
+  if (sanitizedInput.includes("youtube.com")) {
+    for (const [contentType, regex] of Object.entries(
+      platformPatterns.youtube
+    )) {
+      if (regex.test(sanitizedInput)) {
+        return {
+          valid: true,
+          platform: "youtube",
+          contentType,
+          sanitized: sanitizedInput,
+        };
+      }
+    }
+  }
+
+  if (sanitizedInput.includes("instagram.com")) {
+    for (const [contentType, regex] of Object.entries(
+      platformPatterns.instagram
+    )) {
+      if (regex.test(sanitizedInput)) {
+        return {
+          valid: true,
+          platform: "instagram",
+          contentType,
+          sanitized: sanitizedInput,
+        };
+      }
+    }
+  }
+
+  if (sanitizedInput.includes("twitter.com")) {
+    for (const [contentType, regex] of Object.entries(
+      platformPatterns.twitter
+    )) {
+      if (regex.test(sanitizedInput)) {
+        return {
+          valid: true,
+          platform: "twitter",
+          contentType,
+          sanitized: sanitizedInput,
+        };
+      }
+    }
+  }
+
+  // Check for generic keywords last
+  if (platformPatterns.generic.keyword.test(sanitizedInput)) {
+    return {
+      valid: true,
+      platform: "generic",
+      contentType: "keyword",
+      sanitized: sanitizedInput,
+    };
   }
 
   return {

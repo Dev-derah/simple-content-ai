@@ -28,7 +28,6 @@ async function main() {
     const videos = await scraper.scrape(input, limit);
 
     // Process videos
-    // Process videos
     for (const video of videos) {
       try {
         // Ensure we have the required content for repurposing
