@@ -1,9 +1,11 @@
 const config = require("../../config/index"); 
 const TikTokScraper = require("./tiktokScraper");
+const YouTubeScraper = require("./youTubeScraper")
 
 
 const scrapers = {
   tiktok: () => new TikTokScraper(),
+  youtube: () => new YouTubeScraper(),
   // Add other platform scrapers when implemented
 };
 

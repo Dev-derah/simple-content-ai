@@ -6,10 +6,10 @@ async function main() {
   try {
     // Get user input
     const input = await getInput();
-    const { sanitized, platform, contentType } = input;
-
+    const { platform, contentType } = input;
     // Get user-defined video limit
     const scraper = getScraper(platform);
+    console.log(scraper);
     if (!scraper) {
       console.error(`❌ No scraper available for platform: ${platform}`);
       return;
@@ -26,6 +26,8 @@ async function main() {
 
     // Scrape content based on input
     const videos = await scraper.scrape(input, limit);
+
+    console.log("videos", videos);
 
     // Process videos
     for (const video of videos) {
