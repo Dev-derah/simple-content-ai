@@ -9,7 +9,7 @@ async function main() {
     const { platform, contentType } = input;
     // Get user-defined video limit
     const scraper = getScraper(platform);
-    console.log(scraper);
+
     if (!scraper) {
       console.error(`❌ No scraper available for platform: ${platform}`);
       return;
@@ -27,7 +27,6 @@ async function main() {
     // Scrape content based on input
     const videos = await scraper.scrape(input, limit);
 
-    console.log("videos", videos);
 
     // Process videos
     for (const video of videos) {
@@ -50,7 +49,7 @@ async function main() {
         });
 
         console.log(`\n✅ Generated content for ${video.url}:`);
-        console.log(result.content);
+        return result;
       } catch (error) {
         console.error(`🚨 Error processing ${video.url}:`, error.message);
       }

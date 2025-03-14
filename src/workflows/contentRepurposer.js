@@ -85,7 +85,51 @@ class ContentRepurposer {
 
   createCombinedPrompt(sourceContent) {
     return this.cleanPrompt(`
-  Act as a **top-tier social media strategist, growth hacker, and viral content creator** who specializes in **highly engaging, shareable, and high-converting posts**. Your goal is to **repurpose content** into platform-specific, viral-worthy formats that **maximize engagement and follower growth**.   
+# STRICT JSON OUTPUT REQUIRED - NO MARKDOWN OR EXTRA TEXT
+**Role:** Top social media strategist & viral content creator
+**Objective:** Repurpose content into platform-specific JSON formats
+
+## CRITICAL INSTRUCTIONS
+1. Output MUST be pure JSON only - no commentary
+2. Validate JSON syntax before responding
+3. Maintain EXACT field structure shown in example
+4. Use double quotes for all strings/keys
+5. Never use markdown formatting
+6. If unsure about data, leave field as empty string
+
+## OUTPUT TEMPLATE EXAMPLE
+{
+  "platforms": {
+    "LinkedIn": {
+      "hook": "Bold statement here",
+      "storytelling": "Case study narrative...",
+      "value": "Actionable insights...",
+      "engagement_question": "What would you do?",
+      "hashtags": ["#Example", "#HashTag"]
+    },
+    "Twitter": {
+      "tweets": ["Hook...", "Thread part 1...", "Part 2..."],
+      "hashtags": ["#TwitterTip"]
+    }
+  }
+}
+
+## CONTEXT RULES
+- LinkedIn: Professional tone with industry insights
+- Twitter: Thread format with hot takes
+- TikTok: High-energy scripts under 200 chars
+- YouTube: Scene-by-scene directions
+
+## CONTENT TO REPURPOSE
+"${sourceContent}"
+
+## VALIDATION CHECKLIST
+✓ All platform sections present
+✓ No markdown formatting
+✓ Proper string escaping
+✓ Array formatting for multi-item fields
+✓ No trailing commas
+
 
 ## RULES FOR CREATING VIRAL CONTENT:
 - **Hook-Driven:** Grab attention in 2 seconds with a shocking statement, stat, or controversy.  
@@ -111,7 +155,7 @@ class ContentRepurposer {
 - If the content is short and punchy, generate **a single viral-worthy tweet** (Max ${this.platformConfig.twitter.maxLength} characters).  
 - If the content requires depth, generate **a dynamic thread** (not fixed at 3 tweets).  
 - Each tweet should be concise, engaging, and encourage replies or retweets.  
-- **Hook tweet should be a scroll-stopper** ("You’re doing [X] wrong. Here’s what the top 1% do instead.")  
+- **Hook tweet should be a scroll-stopper** ("You're doing [X] wrong. Here's what the top 1% do instead.")  
 - **Hashtags:** Use a maximum of **${this.platformConfig.twitter.hashtagCount}** per tweet for best reach.  
 
 🔹 **TikTok Caption (Max ${this.platformConfig.tiktok.maxLength} characters)**  
@@ -138,12 +182,13 @@ class ContentRepurposer {
 - **Make it feel personal, not robotic** (use humor, storytelling, & authenticity).  
 - **Your goal is to help this content go VIRAL & attract new followers.**  
 
+YOUR OUTPUT (STRICT JSON ONLY):
 ### Generate the content now! 🚀
   `);
   }
 
   parseCombinedResponse(generatedText) {
-    console.log("generatedText", generatedText);
+    console.log("Raw generatedText:", generatedText);
     const contentMap = {
       linkedin: "Content generation failed",
       twitter: "Content generation failed",
@@ -155,58 +200,102 @@ class ContentRepurposer {
     };
 
     try {
-      let platformSections = generatedText;
+      // Clean up the response to extract just the JSON
+      let jsonStr = generatedText;
 
-      // Extract based on explicit platform headers
-      const linkedinMatch = platformSections.match(
-        /🔹 \*\*LinkedIn Post.*?\*\*\n([\s\S]*?)(?=\n\n🔹 \*\*Twitter\/X|\n\n🔹 \*\*TikTok Caption|\Z)/i
-      );
-      if (linkedinMatch) contentMap.linkedin = linkedinMatch[1].trim();
+      // Remove markdown code block markers if present
+      jsonStr = jsonStr.replace(/```json\n|\n```/g, "");
 
-      const twitterMatch = platformSections.match(
-        /🔹 \*\*Twitter\/X.*?\*\*\n([\s\S]*?)(?=\n\n🔹 \*\*TikTok Caption|\Z)/i
-      );
-      if (twitterMatch) {
-        const tweets = twitterMatch[1].trim().split("\n\n");
-        contentMap.twitter = tweets.length === 1 ? tweets[0] : tweets;
+      // Remove any leading/trailing whitespace
+      jsonStr = jsonStr.trim();
+
+      // Parse the cleaned JSON
+      const response = JSON.parse(jsonStr);
+
+      // Validate root structure
+      if (!response.platforms || typeof response.platforms !== "object") {
+        throw new Error("Invalid JSON structure - missing platforms object");
       }
 
-      const tiktokCaptionMatch = platformSections.match(
-        /🔹 \*\*TikTok Caption.*?\*\*\n([\s\S]*?)(?=\n\n🔹 \*\*TikTok Video Script|\Z)/i
-      );
-      if (tiktokCaptionMatch)
-        contentMap.tiktok.caption = tiktokCaptionMatch[1].trim();
+      // LinkedIn Processing
+      if (response.platforms.LinkedIn) {
+        const li = response.platforms.LinkedIn;
+        contentMap.linkedin = [
+          li.hook || "",
+          li.storytelling || "",
+          li.value || "",
+          li.engagement_question || "",
+          (li.hashtags || []).join(" "),
+        ]
+          .filter(Boolean)
+          .join("\n\n");
+      }
 
-      const tiktokScriptMatch = platformSections.match(
-        /🔹 \*\*TikTok Video Script.*?\*\*\n([\s\S]*?)(?=\n\n🔹 \*\*YouTube Script|\Z)/i
-      );
-      if (tiktokScriptMatch)
-        contentMap.tiktok.script = tiktokScriptMatch[1].trim();
+      // Twitter Processing
+      if (response.platforms.Twitter) {
+        const tw = response.platforms.Twitter;
+        contentMap.twitter = Array.isArray(tw.tweets)
+          ? tw.tweets.join("\n")
+          : "";
+      }
 
-      // NEW FIX: Properly capture **FULL YouTube Content** without truncation
-      const youtubeMatch = platformSections.match(
-        /🔹 \*\*YouTube Script.*?\*\*\n([\s\S]*)/i // Removes end truncation issue
-      );
-      if (youtubeMatch) contentMap.youtube = youtubeMatch[1].trim();
+      // TikTok Processing
+      if (response.platforms.TikTok) {
+        const tt = response.platforms.TikTok;
+        contentMap.tiktok = {
+          caption: tt.caption || "",
+          script: tt.script || "",
+        };
+      }
+
+      // YouTube Processing
+      if (response.platforms.YouTube) {
+        contentMap.youtube = response.platforms.YouTube.script || "";
+      }
+
+      return contentMap;
     } catch (error) {
-      console.error("Failed to parse combined response:", error);
+      console.error("JSON Parsing Error:", error);
+      console.error("Attempted to parse:", jsonStr);
+      return this.handlePartialSuccess(contentMap, generatedText);
     }
-
-    return contentMap;
   }
 
-  postProcessContent(platform, content) {
-    const processors = {
-      linkedin: (text) => text.replace(/\n/g, "\n\n"),
-      twitter: (text) => {
-        const tweets = text.split("\n").filter((t) => t.trim());
-        return tweets.map((t, i) => `${t} (${i + 1}/${tweets.length})`);
-      },
-      tiktok: (text) => text.replace(/#/g, "#").replace(/\n/g, " "),
-      youtube: (text) => text.replace(/(\[.*?\])/g, "\n$1\n"),
-    };
+  handlePartialSuccess(contentMap, rawText) {
+    console.warn("Attempting partial error recovery...");
+    try {
+      // Extract content between platform markers if JSON parsing failed
+      const platforms = {
+        linkedin: /"LinkedIn":\s*{([^}]+)}/,
+        twitter: /"Twitter":\s*{([^}]+)}/,
+        tiktok: /"TikTok":\s*{([^}]+)}/,
+        youtube: /"YouTube":\s*{([^}]+)}/,
+      };
 
-    return processors[platform] ? processors[platform](content) : content;
+      for (const [platform, regex] of Object.entries(platforms)) {
+        const match = rawText.match(regex);
+        if (match) {
+          if (platform === "tiktok") {
+            contentMap[platform] = {
+              caption: this.extractValue(match[1], "caption"),
+              script: this.extractValue(match[1], "script"),
+            };
+          } else {
+            contentMap[platform] = this.extractValue(match[1], "content");
+          }
+        }
+      }
+
+      return contentMap;
+    } catch (fallbackError) {
+      console.error("Fallback parsing failed:", fallbackError);
+      return contentMap;
+    }
+  }
+
+  extractValue(text, key) {
+    const match = text.match(new RegExp(`"${key}":\\s*"([^"]+)"`));
+    return match ? match[1] : "";
   }
 
   cleanPrompt(text) {
