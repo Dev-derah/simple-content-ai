@@ -18,6 +18,7 @@ async function downloadAndProcessMedia(instanceFolder, videoUrl, videoId) {
       // Download video
       console.log(`⬇️ Downloading video: ${videoUrl}`);
       videoPath = await downloader.downloadVideo(videoUrl, videoId);
+      console.warn("got back", videoPath);
       await fs.access(videoPath);
 
       // Extract and process audio
