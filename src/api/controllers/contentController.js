@@ -5,11 +5,11 @@ const { validateInput } = require("../../../utils/inputUtils");
 const cleanFormatting = (content) => {
   if (typeof content === "string") {
     return content
-      .replace(/\\n/g, "\n") // Replace literal \n with actual line breaks
-      .replace(/\\/g, "") // Remove remaining backslashes
-      .replace(/\n+/g, "\n") // Replace multiple line breaks with single ones
-      .replace(/\s+/g, " ") // Replace multiple spaces with single space
-      .trim(); // Remove leading/trailing whitespace
+      .replace(/\\n/g, "\n")
+      .replace(/\\/g, "")
+      .replace(/\n+/g, "\n")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   if (typeof content === "object" && content !== null) {
@@ -29,19 +29,24 @@ const cleanFormatting = (content) => {
 
 const processContentRequest = async (req, res) => {
   try {
-    const { url, contentType, platform, options } = req.body;
+    const { url, platform, contentType, options = {} } = req.body;
+    console.log(req.body)
+    const { platforms: targetPlatforms, customPrompt, limit } = options;
 
     // Initialize services
     const repurposer = new ContentRepurposer();
 
     let content;
     if (url) {
-      // Handle URL-based content
+      // URL processing
       const validation = validateInput(url);
       if (!validation.valid) {
-        return res.status(400).json({
-          error: "Invalid URL format",
-        });
+        return res.status(400).json({ error: "Invalid URL format" });
+      }
+
+      const scraper = getScraper(platform);
+      if (!scraper) {
+        return res.status(400).json({ error: "Source platform not supported" });
       }
 
       const input = {
@@ -50,64 +55,88 @@ const processContentRequest = async (req, res) => {
         query: url,
       };
 
-      const scraper = getScraper(platform);
-      if (!scraper) {
-        return res.status(400).json({
-          error: `Platform ${platform} not supported`,
-        });
-      }
-
-      const videos = await scraper.scrape(input);
-      content = await processVideos(videos, repurposer);
+      const videos = await scraper.scrape(input, limit);
+      content = await processVideos(
+        videos,
+        repurposer,
+        targetPlatforms,
+        options
+      );
     } else if (req.body.text) {
-      // Handle direct text input
-      content = await repurposer.processContent({
-        text: req.body.text,
-        platform: platform,
-      });
+      // Direct text processing
+      content = await repurposer.processContent(
+        {
+          text: req.body.text,
+          platform: platform || "generic",
+          language: options.language || "en",
+          url: req.body.url,
+        },
+        {
+          platforms: targetPlatforms,
+          customPrompt,
+        }
+      );
     } else {
       return res.status(400).json({
-        error: "Invalid request: Must provide either URL or text content",
+        error: "Must provide either URL or text content",
       });
     }
 
-    // Clean the content before sending response
     const cleanedContent = cleanFormatting(content);
 
     res.json({
       success: true,
       data: cleanedContent,
+      processedPlatforms: targetPlatforms || "all",
+      customPromptUsed: !!customPrompt,
     });
   } catch (error) {
     console.error("Content processing error:", error);
     res.status(500).json({
       error: error.message,
+      details: error.stack.split("\n")[1].trim(),
     });
   }
 };
 
-async function processVideos(videos, repurposer) {
+async function processVideos(videos, repurposer, targetPlatforms, options) {
   const results = [];
 
   for (const video of videos) {
     try {
       if (!video.transcript && !video.text && !video.caption) {
-        console.warn(`⚠️ Skipping video ${video.url} - No content available`);
+        console.warn(`Skipping video ${video.url} - No content`);
         continue;
       }
 
-      const result = await repurposer.processContent({
-        text: video.transcript || video.caption,
-        transcription: video.transcript,
-        platform: video.platform,
-        url: video.url,
-        hashtags: video.hashtags,
-        uploadDate: video.uploadDate,
-      });
+      const result = await repurposer.processContent(
+        {
+          text: video.transcript || video.caption,
+          transcription: video.transcript,
+          platform: video.platform,
+          url: video.url,
+          hashtags: video.hashtags,
+          uploadDate: video.uploadDate,
+        },
+        {
+          platforms: targetPlatforms, // Now using target platforms from options
+          customPrompt: options.customPrompt,
+          contentType: options.contentType,
+        }
+      );
 
-      results.push(result);
+      results.push({
+        source: video.url,
+        sourcePlatform: video.platform,
+        repurposedContent: result,
+      });
     } catch (error) {
-      console.error(`🚨 Error processing ${video.url}:`, error.message);
+      console.error(`Error processing ${video.url}:`, error.message);
+      results.push({
+        error: error.message,
+        source: video.url,
+        sourcePlatform: video.platform,
+      });
     }
   }
 

@@ -1,12 +1,14 @@
 const getScraper = require("./src/scrapers/scraperFactory");
 const ContentRepurposer = require("./src/workflows/contentRepurposer");
 const { getInput, getLimit } = require("./utils/inputUtils");
+const config = require("./config/index");
 
 async function main() {
   try {
     // Get user input
     const input = await getInput();
     const { platform, contentType } = input;
+
     // Get user-defined video limit
     const scraper = getScraper(platform);
 
@@ -27,7 +29,6 @@ async function main() {
     // Scrape content based on input
     const videos = await scraper.scrape(input, limit);
 
-
     // Process videos
     for (const video of videos) {
       try {
@@ -37,18 +38,34 @@ async function main() {
           continue;
         }
 
-        const result = await repurposer.processContent({
-          // Map the TikTok transcript to the expected content fields
-          text: video.transcript || video.caption,
-          transcription: video.transcript, // For backwards compatibility
-          platform: platform,
-          url: video.url,
-          // Include other relevant metadata
-          hashtags: video.hashtags,
-          uploadDate: video.uploadDate,
-        });
+        const result = await repurposer.processContent(
+          {
+            text: video.transcript || video.caption,
+            transcription: video.transcript,
+            platform: platform,
+            url: video.url,
+            hashtags: video.hashtags,
+            uploadDate: video.uploadDate,
+          },
+          {
+            // Add options as second parameter
+            platforms: getValidPlatforms(video.platform),
+            customPrompt: "",
+          }
+        );
+
+        function getValidPlatforms(sourcePlatform) {
+          const isValid = Object.values(config.PLATFORMS).some(
+            (p) => p.key === sourcePlatform
+          );
+
+          return isValid
+            ? [sourcePlatform]
+            : Object.values(config.PLATFORMS).map((p) => p.key);
+        }
 
         console.log(`\n✅ Generated content for ${video.url}:`);
+        console.log(result);
         return result;
       } catch (error) {
         console.error(`🚨 Error processing ${video.url}:`, error.message);

@@ -2,41 +2,85 @@ const readline = require("readline");
 
 const platformPatterns = {
   tiktok: {
-    profile: /^https:\/\/www\.tiktok\.com\/@[^/]+\/?$/i,
-    video: /^https:\/\/www\.tiktok\.com\/@.+\/video\/\d+/i,
+    profile: [
+      /^(https?:\/\/)?(www\.|m\.)?tiktok\.com\/@[a-zA-Z0-9_.-]+\/?(\?.*)?$/i,
+      /^(https?:\/\/)?(www\.)?tiktok\.com\/tag\/[a-zA-Z0-9_.-]+(\?.*)?$/i,
+    ],
+    video: [
+      /^(https?:\/\/)?(www\.|m\.)?tiktok\.com\/@[^/]+\/video\/\d+(\?.*)?$/i,
+      /^(https?:\/\/)?(www\.)?tiktok\.com\/v\/\d+(\?.*)?$/i,
+      /^(https?:\/\/)?vm\.tiktok\.com\/[a-zA-Z0-9]+(\?.*)?$/i,
+      /^(https?:\/\/)?vt\.tiktok\.com\/[a-zA-Z0-9]+(\?.*)?$/i,
+    ],
     keyword: /^[^<>%\$]{3,50}$/i,
   },
   youtube: {
-    channel: /^https:\/\/www\.youtube\.com\/@[^/]+/i,
-    video: /^(https:\/\/)?(www\.)?youtube\.com\/watch\?v=[\w-]+/i,
+    channel: [
+      /^(https?:\/\/)?(www\.)?youtube\.com\/@[a-zA-Z0-9_.-]+\/?(\?.*)?$/i,
+      /^(https?:\/\/)?(www\.)?youtube\.com\/(c|user)\/[a-zA-Z0-9_.-]+\/?(\?.*)?$/i,
+    ],
+    video: [
+      /^(https?:\/\/)?(www\.)?youtube\.com\/watch\?v=[a-zA-Z0-9_-]+(&.*)?$/i,
+      /^(https?:\/\/)?youtu\.be\/[a-zA-Z0-9_-]+(\?.*)?$/i,
+      /^(https?:\/\/)?(www\.)?youtube\.com\/embed\/[a-zA-Z0-9_-]+(\?.*)?$/i,
+      /^(https?:\/\/)?(www\.)?youtube\.com\/live\/[a-zA-Z0-9_-]+(\?.*)?$/i,
+      /^(https?:\/\/)?(www\.)?youtube\.com\/shorts\/[a-zA-Z0-9_-]+(\?.*)?$/i,
+    ],
     keyword: /^[^<>%\$]{3,50}$/i,
   },
   instagram: {
-    profile: /^https:\/\/www\.instagram\.com\/[^/]+\/?$/i,
-    post: /^https:\/\/www\.instagram\.com\/p\/[\w-]+\/?/i,
-    reel: /^https:\/\/www\.instagram\.com\/reels?\/[\w-]+\/?/i,
+    profile:
+      /^(https?:\/\/)?(www\.)?instagram\.com\/[a-zA-Z0-9_.-]+\/?(\?.*)?$/i,
+    post: [
+      /^(https?:\/\/)?(www\.)?instagram\.com\/p\/[a-zA-Z0-9_-]+\/?(\?.*)?$/i,
+      /^(https?:\/\/)?(www\.)?instagram\.com\/reel\/[a-zA-Z0-9_-]+\/?(\?.*)?$/i,
+      /^(https?:\/\/)?(www\.)?instagram\.com\/tv\/[a-zA-Z0-9_-]+\/?(\?.*)?$/i,
+    ],
+    reel: /^(https?:\/\/)?(www\.)?instagram\.com\/reels?\/[a-zA-Z0-9_-]+\/?(\?.*)?$/i,
   },
   twitter: {
-    profile: /^https:\/\/twitter\.com\/[^/]+\/?$/i,
-    tweet: /^https:\/\/twitter\.com\/[^/]+\/status\/\d+/i,
+    profile: [
+      /^(https?:\/\/)?(www\.)?twitter\.com\/[a-zA-Z0-9_]{1,15}\/?(\?.*)?$/i,
+      /^(https?:\/\/)?(www\.)?x\.com\/[a-zA-Z0-9_]{1,15}\/?(\?.*)?$/i,
+    ],
+    tweet: [
+      /^(https?:\/\/)?(www\.)?twitter\.com\/[a-zA-Z0-9_]+\/status\/\d+(\?.*)?$/i,
+      /^(https?:\/\/)?(www\.)?x\.com\/[a-zA-Z0-9_]+\/status\/\d+(\?.*)?$/i,
+    ],
+  },
+  linkedin: {
+    post: /^(https?:\/\/)?(www\.)?linkedin\.com\/posts\/[a-zA-Z0-9_-]+(\?.*)?$/i,
+    profile:
+      /^(https?:\/\/)?(www\.)?linkedin\.com\/in\/[a-zA-Z0-9-]+\/?(\?.*)?$/i,
   },
   generic: {
     keyword: /^[\w\s-]{3,50}$/i,
+    url: /^(https?:\/\/)?(www\.)?[a-z0-9-]+(\.[a-z]{2,}){1,2}(\/[^\s]*)?$/i,
   },
 };
 
 const validateInput = (input) => {
-  const sanitizedInput = input.trim();
+  const sanitizedInput = input.trim().replace(/\/+$/, ""); // Remove trailing slashes
 
-  // First check for exact platform matches based on domain
-  if (sanitizedInput.includes("tiktok.com")) {
-    for (const [contentType, regex] of Object.entries(
-      platformPatterns.tiktok
-    )) {
-      if (regex.test(sanitizedInput)) {
+  // Check all platforms dynamically
+  const platforms = {
+    tiktok: ["profile", "video", "keyword"],
+    youtube: ["channel", "video", "keyword"],
+    instagram: ["profile", "post", "reel"],
+    twitter: ["profile", "tweet"],
+    linkedin: ["post", "profile"],
+    generic: ["keyword", "url"],
+  };
+
+  for (const [platform, contentTypes] of Object.entries(platforms)) {
+    for (const contentType of contentTypes) {
+      const patterns = platformPatterns[platform][contentType];
+      const patternArray = Array.isArray(patterns) ? patterns : [patterns];
+
+      if (patternArray.some((regex) => regex.test(sanitizedInput))) {
         return {
           valid: true,
-          platform: "tiktok",
+          platform,
           contentType,
           sanitized: sanitizedInput,
         };
@@ -44,57 +88,12 @@ const validateInput = (input) => {
     }
   }
 
-  if (sanitizedInput.includes("youtube.com")) {
-    for (const [contentType, regex] of Object.entries(
-      platformPatterns.youtube
-    )) {
-      if (regex.test(sanitizedInput)) {
-        return {
-          valid: true,
-          platform: "youtube",
-          contentType,
-          sanitized: sanitizedInput,
-        };
-      }
-    }
-  }
-
-  if (sanitizedInput.includes("instagram.com")) {
-    for (const [contentType, regex] of Object.entries(
-      platformPatterns.instagram
-    )) {
-      if (regex.test(sanitizedInput)) {
-        return {
-          valid: true,
-          platform: "instagram",
-          contentType,
-          sanitized: sanitizedInput,
-        };
-      }
-    }
-  }
-
-  if (sanitizedInput.includes("twitter.com")) {
-    for (const [contentType, regex] of Object.entries(
-      platformPatterns.twitter
-    )) {
-      if (regex.test(sanitizedInput)) {
-        return {
-          valid: true,
-          platform: "twitter",
-          contentType,
-          sanitized: sanitizedInput,
-        };
-      }
-    }
-  }
-
-  // Check for generic keywords last
-  if (platformPatterns.generic.keyword.test(sanitizedInput)) {
+  // Fallback check for generic URL pattern
+  if (platformPatterns.generic.url.test(sanitizedInput)) {
     return {
       valid: true,
       platform: "generic",
-      contentType: "keyword",
+      contentType: "url",
       sanitized: sanitizedInput,
     };
   }

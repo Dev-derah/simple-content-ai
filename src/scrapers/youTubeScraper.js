@@ -40,7 +40,7 @@ class YouTubeScraper extends BaseScraper {
       let transcript;
       try {
         const transcriptData = await YoutubeTranscript.fetchTranscript(videoId);
-        console.log("===>transcriptData", transcriptData);
+        
         transcript = transcriptData.map((item) => item.text).join(" ");
       } catch (error) {
         console.log("No transcript available, will extract from audio.");
@@ -53,13 +53,13 @@ class YouTubeScraper extends BaseScraper {
         videoId
       );
 
+
       return [
         {
           ...metadata,
           videoId,
           transcript: transcript || media.transcript,
           videoPath: media.videoPath,
-          audioPath: media.audioPath,
         },
       ];
     } catch (error) {
@@ -73,35 +73,7 @@ class YouTubeScraper extends BaseScraper {
     }
   }
 
-  // async getMetadata(videoUrl) {
-  //   try {
-  //     const options = {
-  //       dumpJson: true,
-  //       noWarnings: true,
-  //       noCallHome: true,
-  //       noCheckCertificate: true,
-  //       preferFreeFormats: true,
-  //       youtubeSkipDashManifest: true,
-  //     };
-
-  //     const info = await ytdl(videoUrl, options);
-
-  //     return {
-  //       title: info.title || "Untitled",
-  //       description: info.description || "",
-  //       keywords: info.tags || [],
-  //       channel: info.uploader || "Unknown",
-  //       uploadDate: info.upload_date || "",
-  //       views: info.view_count || 0,
-  //       duration: info.duration || 0,
-  //       videoId: info.id || this.extractVideoId(videoUrl),
-  //       url: videoUrl,
-  //     };
-  //   } catch (error) {
-  //     console.error("❌ Error fetching metadata:", error.message);
-  //     return null;
-  //   }
-  // }
+ 
 
   async getMetadata(videoUrl) {
     try {
@@ -118,7 +90,6 @@ class YouTubeScraper extends BaseScraper {
 
       const info = await ytdl(videoUrl, options);
 
-      console.log("Metadata fetched successfully:", info);
 
       return {
         title: info.title || "Untitled",

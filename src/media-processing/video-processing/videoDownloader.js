@@ -27,9 +27,14 @@ class VideoDownloader {
         try {
           const result = await ytdl(videoUrl, {
             output: videoFilePath,
-            format: "mp4",
             ffmpegLocation: ffmpeg.path,
+            format:
+              "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best",
+            mergeOutputFormat: "mp4",
             noCheckCertificates: true,
+            ignoreErrors: true,
+            verbose: true,
+            addHeader: ["referer:youtube.com", "user-agent:googlebot"],
           });
 
           return videoFilePath;
@@ -38,8 +43,6 @@ class VideoDownloader {
 
           throw error;
         }
-
-        return videoFilePath;
       } catch (error) {
         if (retries === 0) throw error;
         retries--;

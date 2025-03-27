@@ -23,7 +23,7 @@
     "playwright": "^1.35.0",
     "playwright-extra": "^4.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "youtube-dl-exec": "^3.0.16",
+    "youtube-dl-exec": "^3.0.19",
     "youtube-transcript": "^1.2.1"
   },
   "devDependencies": {

@@ -23,8 +23,7 @@ async function processAudio(videoPath, outputDir) {
   // const transcriptPath = path.join(outputDir, "transcription.txt");
   // await fs.writeFile(transcriptPath, transcript, "utf-8");
 
-  // console.log("✅ Transcription saved:", transcriptPath);
-
+  console.log("✅ Transcription saved:", transcript);
   return { audioPath, transcript };
 }
 

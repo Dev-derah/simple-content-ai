@@ -1,21 +1,25 @@
-const config = require("../../config/index"); 
+const config = require("../../config/index");
 const TikTokScraper = require("./tiktokScraper");
-const YouTubeScraper = require("./youTubeScraper")
+const YouTubeScraper = require("./youTubeScraper");
 
-
-const scrapers = {
-  tiktok: () => new TikTokScraper(),
-  youtube: () => new YouTubeScraper(),
-  // Add other platform scrapers when implemented
+// Map platform keys to scrapers
+const SCRAPER_MAP = {
+  [config.PLATFORMS.tiktok.key]: TikTokScraper,
+  [config.PLATFORMS.youtube.key]: YouTubeScraper,
 };
 
+module.exports = (platformKey) => {
+  // Validate platform exists in config
+  const platformConfig = Object.values(config.PLATFORMS).find(
+    (p) => p.key === platformKey
+  );
 
-module.exports = (platform) => {
-  if (!config.PLATFORMS.includes(platform)) {
-    console.warn(
-      `Warning: Platform "${platform}" is not defined in config.PLATFORMS`
-    );
+  if (!platformConfig) {
+    console.warn(`Platform "${platformKey}" not configured`);
     return null;
   }
-  return scrapers[platform] ? scrapers[platform]() : null;
+
+  // Get appropriate scraper
+  const ScraperClass = SCRAPER_MAP[platformKey];
+  return ScraperClass ? new ScraperClass() : null;
 };

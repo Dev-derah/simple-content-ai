@@ -1,10 +1,10 @@
-const { exec } = require("child_process");
+const { execFile } = require("child_process");
 const { promisify } = require("util");
 const path = require("path");
 const ffmpeg = require("@ffmpeg-installer/ffmpeg");
 const fs = require("fs").promises;
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 class AudioExtractor {
   constructor(outputDir) {
@@ -13,36 +13,40 @@ class AudioExtractor {
 
   async extract(videoPath, filename) {
     try {
-      // Ensure output directory exists
+      await fs.mkdir(this.outputDir, { recursive: true });
+      const outputPath = path.join(this.outputDir, `${filename}.wav`);
 
-       await fs.mkdir(this.outputDir, { recursive: true });
+      // Verify input file exists
+      await fs.access(videoPath);
 
-       const outputPath = path.join(this.outputDir, `${filename}.wav`);
-
-
-      const command = [
-        `"${ffmpeg.path}"`,
+      const args = [
         "-hide_banner",
-        "-loglevel error",
+        "-loglevel",
+        "error",
         "-y",
-        `-i "${videoPath}"`,
-        "-vn", // Disable video
-        "-ac 1", // Convert to mono
-        "-ar 16000", // Set sample rate to 16kHz (recommended for ASR models)
-        "-c:a pcm_s16le", // Convert to WAV format
-        `"${outputPath}"`,
-      ].join(" ");
+        "-i",
+        videoPath,
+        "-vn",
+        "-map",
+        "0:a:0", // Explicitly select first audio stream
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-c:a",
+        "pcm_s16le",
+        outputPath,
+      ];
 
-      // console.log(`Extracting audio: ${command}`);
+      console.log("Executing ffmpeg with args:", [ffmpeg.path, ...args]);
 
-      const { stderr } = await execAsync(command);
-
-      if (stderr) {
-        console.error("FFmpeg warnings:", stderr);
-      }
+      const { stderr } = await execFileAsync(ffmpeg.path, args);
 
       // Verify output file was created
-      await fs.access(outputPath);
+      const stats = await fs.stat(outputPath);
+      if (stats.size === 0) {
+        throw new Error("Empty output file created");
+      }
 
       return outputPath;
     } catch (error) {

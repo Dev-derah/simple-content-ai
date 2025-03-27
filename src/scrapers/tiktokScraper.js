@@ -33,6 +33,7 @@ class TikTokScraper extends BaseScraper {
         url,
         videoId
       );
+      console.warn("media", media)
 
       videos.push({ ...videoData, ...media });
     }

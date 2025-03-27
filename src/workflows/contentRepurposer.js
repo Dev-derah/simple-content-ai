@@ -5,77 +5,55 @@ const config = require("../../config");
 class ContentRepurposer {
   constructor() {
     this.aiService = new AIService();
-    this.platformConfig = {
-      linkedin: {
-        maxLength: 2000, // Optimal post length for maximum engagement
-        hashtagCount: 3, // Recommended number of hashtags
-        tone: "professional",
-      },
-      twitter: {
-        maxLength: 280, // Maximum character limit per tweet
-        threadCount: "dynamic", // Adjusts based on content depth and value
-        hashtagCount: 1, // Optimal number of hashtags per tweet
-      },
-      tiktok: {
-        maxLength: 150, // Ideal caption length
-        hashtagCount: 5, // Suggested number of hashtags
-        emojiFrequency: "high", // High usage of emojis to boost engagement
-        scriptSections: ["hook", "body", "callToAction"], // Structured script components
-      },
-      youtube: {
-        sections: ["intro", "content", "outro"],
-        callToAction: true,
-        videoLength: "30-60 seconds", // Ideal video duration for engagement
-      },
+    this.platformConfig = this.initializePlatformConfig();
+    this.platformMappings = this.createPlatformMappings();
+  }
+
+  initializePlatformConfig() {
+    return {
+      [config.PLATFORMS.linkedin.key]: config.PLATFORMS.linkedin,
+      [config.PLATFORMS.twitter.key]: config.PLATFORMS.twitter,
+      [config.PLATFORMS.tiktok.key]: config.PLATFORMS.tiktok,
+      [config.PLATFORMS.youtube.key]: config.PLATFORMS.youtube,
     };
   }
 
-  async processContent(contentData) {
-    console.log("contentData", contentData);
+  createPlatformMappings() {
+    return {
+      [config.PLATFORMS.linkedin.key]: config.PLATFORMS.linkedin.displayName,
+      [config.PLATFORMS.twitter.key]: config.PLATFORMS.twitter.displayName,
+      [config.PLATFORMS.tiktok.key]: config.PLATFORMS.tiktok.displayName,
+      [config.PLATFORMS.youtube.key]: config.PLATFORMS.youtube.displayName,
+    };
+  }
+
+  async processContent(contentData, options = {}) {
     try {
-      if (!contentData) {
-        throw new Error("No content data provided");
-      }
+ 
+      const requestedPlatforms = this.validatePlatforms(options.platforms);
+      const customPrompt = options.customPrompt || "";
 
-      const result = {
-        metadata: {
-          source: contentData.url
-            ? {
-                originalUrl: contentData.url,
-                platform: contentData.platform || "unknown",
-                scrapedAt: contentData.uploadDate || new Date().toISOString(),
-              }
-            : {
-                type: "user-provided",
-                receivedAt: new Date().toISOString(),
-              },
-          contentMetadata: {
-            language: contentData.language || "en",
-            contentType: contentData.contentType || "text",
-            length: (contentData.text || contentData.transcription || "")
-              .length,
-            hashtags: contentData.hashtags || [],
-          },
-        },
-        content: {},
-      };
+      if (!contentData) throw new Error("No content data provided");
 
-      const sourceContent =
-        contentData.text || contentData.transcription || contentData.caption;
+      const result = this.initializeResultStructure(contentData);
 
-      if (!sourceContent) {
-        throw new Error("No content provided for repurposing");
-      }
+      const sourceContent = this.getSourceContent(contentData);
 
-      // Single API call for all platforms
-      const combinedPrompt = this.createCombinedPrompt(sourceContent);
+      const combinedPrompt = this.createCombinedPrompt(
+        sourceContent,
+        requestedPlatforms,
+        customPrompt
+      );
+
       const generated = await retryAsync(
         () => this.aiService.generateContent(combinedPrompt),
         3
       );
 
-      // Parse the combined response
-      result.content = this.parseCombinedResponse(generated.generated_text);
+      result.content = this.parseCombinedResponse(
+        generated.generated_text,
+        requestedPlatforms
+      );
 
       return result;
     } catch (error) {
@@ -83,208 +61,288 @@ class ContentRepurposer {
     }
   }
 
-  createCombinedPrompt(sourceContent) {
-    return this.cleanPrompt(`
-# STRICT JSON OUTPUT REQUIRED - NO MARKDOWN OR EXTRA TEXT
-**Role:** Top social media strategist & viral content creator
-**Objective:** Repurpose content into platform-specific JSON formats
-
-## CRITICAL INSTRUCTIONS
-1. Output MUST be pure JSON only - no commentary
-2. Validate JSON syntax before responding
-3. Maintain EXACT field structure shown in example
-4. Use double quotes for all strings/keys
-5. Never use markdown formatting
-6. If unsure about data, leave field as empty string
-
-## OUTPUT TEMPLATE EXAMPLE
-{
-  "platforms": {
-    "LinkedIn": {
-      "hook": "Bold statement here",
-      "storytelling": "Case study narrative...",
-      "value": "Actionable insights...",
-      "engagement_question": "What would you do?",
-      "hashtags": ["#Example", "#HashTag"]
-    },
-    "Twitter": {
-      "tweets": ["Hook...", "Thread part 1...", "Part 2..."],
-      "hashtags": ["#TwitterTip"]
+  validatePlatforms(platforms) {
+    const validPlatforms = platforms
+      ? platforms.filter((p) => this.platformConfig[p])
+      : Object.keys(this.platformConfig);
+    if (validPlatforms.length === 0) {
+      throw new Error("No valid platforms specified");
     }
-  }
-}
-
-## CONTEXT RULES
-- LinkedIn: Professional tone with industry insights
-- Twitter: Thread format with hot takes
-- TikTok: High-energy scripts under 200 chars
-- YouTube: Scene-by-scene directions
-
-## CONTENT TO REPURPOSE
-"${sourceContent}"
-
-## VALIDATION CHECKLIST
-✓ All platform sections present
-✓ No markdown formatting
-✓ Proper string escaping
-✓ Array formatting for multi-item fields
-✓ No trailing commas
-
-
-## RULES FOR CREATING VIRAL CONTENT:
-- **Hook-Driven:** Grab attention in 2 seconds with a shocking statement, stat, or controversy.  
-- **Emotion-Packed:** Use storytelling, controversy, humor, FOMO, or relatability.  
-- **Value-Driven:** Share practical insights, rare knowledge, or industry trends.  
-- **Engagement-Optimized:** Every post should encourage likes, comments, and shares.  
-- **Hashtag & Formatting Best Practices:** Follow each platform's unique engagement style.  
-
----
-
-### **Repurposed Content for Each Platform**  
-**Base Content:** "${sourceContent}"  
-
-🔹 **LinkedIn Post (Max ${this.platformConfig.linkedin.maxLength} characters)**  
-- **Hook:** Start with a bold statement, stat, or hot take.  
-- **Storytelling:** Share an insightful, relatable story or case study.  
-- **Value:** Provide unique insights, actionable steps, or thought leadership.  
-- **Engagement Question:** End with a thought-provoking question.  
-- **Hashtags:** Use ${this.platformConfig.linkedin.hashtagCount} trending industry hashtags.  
-
-🔹 **Twitter/X**  
-**Decide based on the content:**  
-- If the content is short and punchy, generate **a single viral-worthy tweet** (Max ${this.platformConfig.twitter.maxLength} characters).  
-- If the content requires depth, generate **a dynamic thread** (not fixed at 3 tweets).  
-- Each tweet should be concise, engaging, and encourage replies or retweets.  
-- **Hook tweet should be a scroll-stopper** ("You're doing [X] wrong. Here's what the top 1% do instead.")  
-- **Hashtags:** Use a maximum of **${this.platformConfig.twitter.hashtagCount}** per tweet for best reach.  
-
-🔹 **TikTok Caption (Max ${this.platformConfig.tiktok.maxLength} characters)**  
-- **Trending, curiosity-driven, & punchy** ("Most people get this WRONG 🤯...")  
-- **Use power words** that trigger FOMO or emotion.  
-- **High emoji use** (🔥🚀🤔💡)  
-- **Hashtags:** ${this.platformConfig.tiktok.hashtagCount} viral hashtags  
-
-🔹 **TikTok Video Script (30-60 sec)**  
-🎬 **[Hook]** (Shocking statement, humor, or curiosity-building question)  
-🎥 **[Main Content]** (Fast-paced, engaging storytelling or tutorial with cuts & effects)  
-📢 **[Call to Action]** ("Follow for more!", "Comment if you agree!")  
-- **Engagement boosters:** Jump cuts, open loops, captions, trending sounds  
-
-🔹 **YouTube Script (30-60 sec)**  
-📌 **[Intro]** (Hook that grabs attention in 3 sec: controversial take, shocking stat, or humor)  
-🎥 **[Main Content]** (Story-driven, simple structure with scene directions)  
-📢 **[Outro]** ("Like & subscribe if you found this helpful!")  
-
----
-
-💡 **Final Check:**  
-- **Every post should be optimized for MAXIMUM engagement & shareability.**  
-- **Make it feel personal, not robotic** (use humor, storytelling, & authenticity).  
-- **Your goal is to help this content go VIRAL & attract new followers.**  
-
-YOUR OUTPUT (STRICT JSON ONLY):
-### Generate the content now! 🚀
-  `);
+    return validPlatforms;
   }
 
-  parseCombinedResponse(generatedText) {
-    console.log("Raw generatedText:", generatedText);
-    const contentMap = {
-      linkedin: "Content generation failed",
-      twitter: "Content generation failed",
-      tiktok: {
-        caption: "Content generation failed",
-        script: "Content generation failed",
+  initializeResultStructure(contentData) {
+    return {
+      metadata: {
+        source: contentData.url
+          ? {
+              originalUrl: contentData.url,
+              platform: contentData.platform || "unknown",
+              scrapedAt: contentData.uploadDate || new Date().toISOString(),
+            }
+          : {
+              type: "user-provided",
+              receivedAt: new Date().toISOString(),
+            },
+        contentMetadata: {
+          language: contentData.language || "en",
+          contentType: contentData.contentType || "text",
+          length: (contentData.text || contentData.transcription || "").length,
+          hashtags: contentData.hashtags || [],
+        },
       },
-      youtube: "Content generation failed",
+      content: {},
     };
+  }
+
+  getSourceContent(contentData) {
+    const sourceContent =
+      contentData.text || contentData.transcription || contentData.caption;
+    if (!sourceContent) throw new Error("No content provided for repurposing");
+    return sourceContent;
+  }
+
+  createCombinedPrompt(sourceContent, platforms, customPrompt) {
+    const platformNames = platforms.map((p) => this.platformMappings[p]);
+    const platformExamples = this.getPlatformExamples(platforms);
+    const platformRules = this.getPlatformInstructions(platforms);
+
+    return this.cleanPrompt(`
+      # STRICT JSON OUTPUT REQUIRED - NO MARKDOWN OR EXTRA TEXT
+      **Role:** Top social media strategist & viral content creator
+      **Objective:** Repurpose content into platform-specific JSON formats
+
+      ## CRITICAL INSTRUCTIONS
+      1. Generate content ONLY for: ${platformNames.join(", ")}
+      2. ${customPrompt ? "USER INSTRUCTIONS: " + customPrompt : ""}
+      3. Output MUST be pure JSON only
+      4. Validate JSON syntax before responding
+
+      ## OUTPUT TEMPLATE EXAMPLE
+      {
+        "platforms": {
+          ${platformExamples}
+        }
+      }
+
+      ## PLATFORM-SPECIFIC RULES
+      ${platformRules}
+
+      ## CONTENT TO REPURPOSE
+      "${sourceContent}"
+
+      ## VALIDATION CHECKLIST
+      ✓ All platform sections present
+      ✓ No markdown formatting
+      ✓ Proper string escaping
+      ✓ Array formatting for multi-item fields
+      ✓ No trailing commas
+
+      ## RULES FOR VIRAL CONTENT:
+      ${this.getViralContentRules()}
+
+      ${this.getPlatformSpecificGuidelines(platforms)}
+
+      YOUR OUTPUT (STRICT JSON ONLY):
+    `);
+  }
+
+  getViralContentRules() {
+    return `- **Hook-Driven:** Grab attention in 2 seconds
+- **Emotion-Packed:** Use storytelling, humor, FOMO
+- **Value-Driven:** Share practical insights
+- **Engagement-Optimized:** Encourage interactions
+- **Platform Best Practices:** Follow formatting rules`;
+  }
+
+  getPlatformSpecificGuidelines(platforms) {
+    return platforms
+      .map((platform) => {
+        const config = this.platformConfig[platform];
+        return (
+          `🔹 **${this.platformMappings[platform]}**\n` +
+          `- Max Length: ${config.maxLength}\n` +
+          `- Hashtags: ${config.hashtagCount}\n` +
+          `- Style: ${config.tone || config.emojiFrequency}\n` +
+          `- Structure: ${
+            config.scriptSections?.join(" → ") || config.sections?.join(", ")
+          }`
+        );
+      })
+      .join("\n\n");
+  }
+
+  getPlatformExamples(platforms) {
+    return platforms
+      .map((platform) => {
+        const displayName = this.platformMappings[platform];
+        const config = this.platformConfig[platform];
+
+        switch (platform) {
+          case "linkedin":
+            return `"${displayName}": {
+          "hook": "Bold statement here",
+          "storytelling": "Case study...",
+          "value": "Actionable insights...",
+          "engagement_question": "What would you do?",
+          "hashtags": ["${config?.hashtagExamples?.join('", "') || "#Example"}"]
+        }`;
+          case "twitter":
+            return `"${displayName}": {
+          "tweets": ["Hook...", "Thread part..."],
+          "hashtags": ["${config?.hashtagExamples || "#Trending"}]
+        }`;
+          case "tiktok":
+            return `"${displayName}": {
+          "caption": "${config?.emojiExamples || "🚀"} Viral caption...",
+          "script": "🎬 HOOK: ..."
+        }`;
+          case "youtube":
+            return `"${displayName}": {
+          "script": {
+            "intro": "Hook...",
+            "main_content": "...",
+            "outro": "Like & subscribe!"
+          }
+        }`;
+          default:
+            return null;
+        }
+      })
+      .filter(Boolean)
+      .join(",\n");
+  }
+
+  getPlatformInstructions(platforms) {
+    return platforms
+      .map((platform) => {
+        const config = this.platformConfig[platform];
+        return (
+          `- ${this.platformMappings[platform]}:\n` +
+          `  • Max length: ${config.maxLength}\n` +
+          `  • Hashtags: ${config.hashtagCount}\n` +
+          `  • Tone: ${config.tone || "N/A"}\n` +
+          `  • Structure: ${
+            config.scriptSections?.join(", ") || config.sections?.join(", ")
+          }`
+        );
+      })
+      .join("\n");
+  }
+
+  parseCombinedResponse(generatedText, platforms) {
+    const contentMap = this.initializeContentMap(platforms);
+    let jsonStr = generatedText;
 
     try {
-      // Clean up the response to extract just the JSON
-      let jsonStr = generatedText;
-
-      // Remove markdown code block markers if present
-      jsonStr = jsonStr.replace(/```json\n|\n```/g, "");
-
-      // Remove any leading/trailing whitespace
-      jsonStr = jsonStr.trim();
-
-      // Parse the cleaned JSON
+      jsonStr = jsonStr.replace(/```json\n|\n```/g, "").trim();
       const response = JSON.parse(jsonStr);
 
-      // Validate root structure
       if (!response.platforms || typeof response.platforms !== "object") {
         throw new Error("Invalid JSON structure - missing platforms object");
       }
 
-      // LinkedIn Processing
-      if (response.platforms.LinkedIn) {
-        const li = response.platforms.LinkedIn;
-        contentMap.linkedin = [
-          li.hook || "",
-          li.storytelling || "",
-          li.value || "",
-          li.engagement_question || "",
-          (li.hashtags || []).join(" "),
-        ]
-          .filter(Boolean)
-          .join("\n\n");
-      }
+      platforms.forEach((platform) => {
+        const platformConfig = this.platformConfig[platform];
+        if (!platformConfig) return;
 
-      // Twitter Processing
-      if (response.platforms.Twitter) {
-        const tw = response.platforms.Twitter;
-        contentMap.twitter = Array.isArray(tw.tweets)
-          ? tw.tweets.join("\n")
-          : "";
-      }
+        const platformDisplayName = this.platformMappings[platform];
+        const platformData = response.platforms[platformDisplayName];
+        if (!platformData) return;
 
-      // TikTok Processing
-      if (response.platforms.TikTok) {
-        const tt = response.platforms.TikTok;
-        contentMap.tiktok = {
-          caption: tt.caption || "",
-          script: tt.script || "",
-        };
-      }
+        switch (platform) {
+          case config.PLATFORMS.linkedin.key:
+            contentMap[platform] = this.processLinkedInContent(platformData);
+            break;
 
-      // YouTube Processing
-      if (response.platforms.YouTube) {
-        contentMap.youtube = response.platforms.YouTube.script || "";
-      }
+          case config.PLATFORMS.twitter.key:
+            contentMap[platform] = this.processTwitterContent(platformData);
+            break;
+
+          case config.PLATFORMS.tiktok.key:
+            contentMap[platform] = this.processTikTokContent(platformData);
+            break;
+
+          case config.PLATFORMS.youtube.key:
+            contentMap[platform] = this.processYouTubeContent(platformData);
+            break;
+        }
+      });
 
       return contentMap;
     } catch (error) {
       console.error("JSON Parsing Error:", error);
-      console.error("Attempted to parse:", jsonStr);
-      return this.handlePartialSuccess(contentMap, generatedText);
+      return this.handlePartialSuccess(contentMap, generatedText, platforms);
     }
   }
 
-  handlePartialSuccess(contentMap, rawText) {
+  // Platform-specific processors
+  processLinkedInContent(data) {
+    return [
+      data.hook || "",
+      data.storytelling || "",
+      data.value || "",
+      data.engagement_question || "",
+      (data.hashtags || []).join(" "),
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+  }
+
+  processTwitterContent(data) {
+    return Array.isArray(data.tweets) ? data.tweets.join("\n") : "";
+  }
+
+  processTikTokContent(data) {
+    return {
+      caption: data.caption || "",
+      script: data.script || "",
+    };
+  }
+
+  processYouTubeContent(data) {
+    const script = data.script || {};
+    return [script.intro || "", script.main_content || "", script.outro || ""]
+      .filter(Boolean)
+      .join("\n\n");
+  }
+
+  handlePartialSuccess(contentMap, rawText, platforms) {
     console.warn("Attempting partial error recovery...");
     try {
-      // Extract content between platform markers if JSON parsing failed
-      const platforms = {
-        linkedin: /"LinkedIn":\s*{([^}]+)}/,
-        twitter: /"Twitter":\s*{([^}]+)}/,
-        tiktok: /"TikTok":\s*{([^}]+)}/,
-        youtube: /"YouTube":\s*{([^}]+)}/,
-      };
+      const platformRegexes = platforms.reduce((acc, platform) => {
+        const displayName = this.platformMappings[platform];
+        acc[platform] = new RegExp(`"${displayName}":\\s*{([^}]+)}`);
+        return acc;
+      }, {});
 
-      for (const [platform, regex] of Object.entries(platforms)) {
+      platforms.forEach((platform) => {
+        const regex = platformRegexes[platform];
         const match = rawText.match(regex);
-        if (match) {
-          if (platform === "tiktok") {
+        if (!match) return;
+
+        switch (platform) {
+          case config.PLATFORMS.tiktok.key:
             contentMap[platform] = {
               caption: this.extractValue(match[1], "caption"),
               script: this.extractValue(match[1], "script"),
             };
-          } else {
-            contentMap[platform] = this.extractValue(match[1], "content");
-          }
+            break;
+
+          case config.PLATFORMS.youtube.key:
+            contentMap[platform] = [
+              this.extractValue(match[1], "intro"),
+              this.extractValue(match[1], "main_content"),
+              this.extractValue(match[1], "outro"),
+            ]
+              .filter(Boolean)
+              .join("\n\n");
+            break;
+
+          default:
+            contentMap[platform] = this.extractNestedContent(match[1]);
         }
-      }
+      });
 
       return contentMap;
     } catch (fallbackError) {
@@ -293,16 +351,53 @@ YOUR OUTPUT (STRICT JSON ONLY):
     }
   }
 
-  extractValue(text, key) {
-    const match = text.match(new RegExp(`"${key}":\\s*"([^"]+)"`));
-    return match ? match[1] : "";
+  // Updated helper to use config-based platform keys
+  initializeContentMap(platforms) {
+    const map = {};
+    platforms.forEach((platform) => {
+      if (!this.platformConfig[platform]) return;
+
+      switch (platform) {
+        case config.PLATFORMS.tiktok.key:
+          map[platform] = {
+            caption: "Content generation failed",
+            script: "Content generation failed",
+          };
+          break;
+        default:
+          map[platform] = "Content generation failed";
+      }
+    });
+    return map;
   }
 
-  cleanPrompt(text) {
-    return text
-      .replace(/\s+/g, " ")
-      .trim()
-      .replace(/(\d+\. )/g, "\n$1");
+    cleanPrompt(text) {
+      return text
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/(\d+\. )/g, "\n$1");
+    }
+
+  // parseCombinedResponse and helper methods remain similar but use this.platformConfig
+  // ... (previous parsing implementation with config-based platform checks)
+
+  initializeContentMap(platforms) {
+    const map = {};
+    platforms.forEach((platform) => {
+      if (!this.platformConfig[platform]) return;
+
+      switch (platform) {
+        case config.PLATFORMS.tiktok.key:
+          map[platform] = {
+            caption: "Content generation failed",
+            script: "Content generation failed",
+          };
+          break;
+        default:
+          map[platform] = "Content generation failed";
+      }
+    });
+    return map;
   }
 }
 
