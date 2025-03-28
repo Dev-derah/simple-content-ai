@@ -1,4 +1,4 @@
-const AIService = require("../services/AIService");
+const AIService = require("../services/aiService");
 const { retryAsync } = require("../../utils/retryHandler");
 const config = require("../../config");
 
