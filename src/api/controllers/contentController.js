@@ -30,7 +30,6 @@ const cleanFormatting = (content) => {
 const processContentRequest = async (req, res) => {
   try {
     const { url, platform, contentType, options = {} } = req.body;
-    console.log(req.body)
     const { platforms: targetPlatforms, customPrompt, limit } = options;
 
     // Initialize services
@@ -86,7 +85,7 @@ const processContentRequest = async (req, res) => {
 
     res.json({
       success: true,
-      data: cleanedContent,
+      repurposedContent: cleanedContent,
       processedPlatforms: targetPlatforms || "all",
       customPromptUsed: !!customPrompt,
     });

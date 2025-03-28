@@ -5,6 +5,9 @@ const contentRouter = require("./routes/content");
 
 const app = express();
 
+// Enable trust proxy for Render
+app.set("trust proxy", 1); // Render uses a proxy, so this is necessary
+
 // Middleware
 app.use(express.json());
 app.use(cors());
@@ -18,7 +21,7 @@ app.use((req, res, next) => {
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 15, 
+  max: 15,
 });
 app.use(limiter);
 
