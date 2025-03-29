@@ -17,16 +17,33 @@ class BaseScraper {
     this.instanceFolder = this.createInstanceFolder();
   }
 
+  // async initialize() {
+  //   this.browser = await chromium.launch({
+  //     headless: true,
+  //     args: [
+  //       "--no-sandbox",
+  //       "--disable-setuid-sandbox",
+  //       "--disable-dev-shm-usage",
+  //     ],
+  //   });
+  // }
+
   async initialize() {
     this.browser = await chromium.launch({
       headless: true,
-      channel: "chromium",
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
       ],
     });
+
+    // Add context and page creation
+    this.context = await this.browser.newContext();
+    this.page = await this.context.newPage();
+
+    // Optional: Set default timeout
+    this.page.setDefaultTimeout(60000);
   }
 
   createInstanceFolder() {
@@ -46,6 +63,9 @@ class BaseScraper {
   }
 
   async navigateToUrl(url) {
+     if (!this.page) {
+       throw new Error("Page not initialized - call initialize() first");
+     }
     await retryAsync(async () => {
       await this.page.goto(url, {
         waitUntil: "domcontentloaded",

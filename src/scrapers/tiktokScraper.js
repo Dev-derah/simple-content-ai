@@ -19,6 +19,9 @@ class TikTokScraper extends BaseScraper {
   async scrape(input, limit) {
     await this.initialize();
     await this.createFolderStructure();
+     if (!this.page) {
+      throw new Error('Page failed to initialize');
+    }
     await this.navigateToUrl(input.sanitized);
 
     const videoUrls = await this.extractVideoUrls(input.contentType, limit);
