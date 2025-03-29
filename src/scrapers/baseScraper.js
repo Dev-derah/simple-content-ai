@@ -19,11 +19,10 @@ class BaseScraper {
 
   async initialize() {
     const { headless } = config.getScraperConfig();
-    this.browser = await chromium.launch({ headless });
-    this.context = await this.browser.newContext();
-    this.page = await this.context.newPage();
-    await this.page.addInitScript(() => {
-      delete navigator.webdriver;
+    this.browser = await chromium.launch({
+      headless: true, // Force headless in production
+      channel: "chromium", // Explicitly specify Chromium
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
   }
 
