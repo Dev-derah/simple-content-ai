@@ -18,11 +18,14 @@ class BaseScraper {
   }
 
   async initialize() {
-    const { headless } = config.getScraperConfig();
     this.browser = await chromium.launch({
-      headless: true, // Force headless in production
-      channel: "chromium", // Explicitly specify Chromium
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      headless: true,
+      channel: "chromium",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+      ],
     });
   }
 
