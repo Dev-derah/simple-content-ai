@@ -9,7 +9,7 @@ WORKDIR /app
 
 # 1. Copy package files FIRST for layer caching
 COPY package*.json ./
-COPY yarn.lock ./  # If using Yarn
+
 
 # 2. Install PRODUCTION dependencies only (more secure)
 RUN npm ci --only=production --no-optional
