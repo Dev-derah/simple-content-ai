@@ -1,4 +1,3 @@
-# Use official Playwright image
 FROM mcr.microsoft.com/playwright:v1.38.1-jammy
 
 # Install system dependencies
@@ -8,25 +7,22 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Copy package files first for better caching
+# 1. Copy package files FIRST for layer caching
 COPY package*.json ./
+COPY yarn.lock ./  # If using Yarn
 
-# Install dependencies with retries and GitHub token support
-ARG GITHUB_TOKEN=""
-RUN if [ -n "$GITHUB_TOKEN" ]; then \
-      echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" > .npmrc && \
-      npm config set @your-org:registry=https://npm.pkg.github.com; \
-    fi && \
-    npm install --production --fetch-retries=5 --fetch-retry-mintimeout=20000 && \
-    rm -f .npmrc 2>/dev/null || true
+# 2. Install PRODUCTION dependencies only (more secure)
+RUN npm ci --only=production --no-optional
 
-# Copy source code
+# 3. Install Playwright browsers
+RUN npx playwright install --with-deps
+
+# 4. Copy the REST of your files AFTER npm install
 COPY . .
 
 # Environment variables
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV NODE_ENV=production
 EXPOSE 3000
-
 
 CMD ["npm", "start"]
