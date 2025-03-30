@@ -30,7 +30,7 @@ COPY . .
 # 7. Environment variables
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV NODE_ENV=production
-ENV FFMPEG_PATH=/usr/bin/ffmpeg  # Explicit path to FFmpeg
+ENV FFMPEG_PATH=/usr/bin/ffmpeg 
 
 EXPOSE 3000
 
