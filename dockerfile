@@ -1,28 +1,37 @@
 FROM mcr.microsoft.com/playwright:v1.38.1-jammy
 
-# Install system dependencies
+# 1. Install system dependencies (including proper FFmpeg)
 RUN apt-get update && \
-    apt-get install -y ffmpeg && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y \
+    ffmpeg \
+    libx264-dev \
+    libx265-dev \
+    libvpx-dev \
+    libopus-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Verify FFmpeg installation
+RUN ffmpeg -version
 
 WORKDIR /app
 
-# 1. Copy package files FIRST for layer caching
+# 3. Copy package files first for caching
 COPY package*.json ./
 
-
-# 2. Install PRODUCTION dependencies only (more secure)
+# 4. Install npm dependencies
 RUN npm ci --only=production --no-optional
 
-# 3. Install Playwright browsers
+# 5. Install Playwright browsers
 RUN npx playwright install --with-deps
 
-# 4. Copy the REST of your files AFTER npm install
+# 6. Copy application code
 COPY . .
 
-# Environment variables
+# 7. Environment variables
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV NODE_ENV=production
+ENV FFMPEG_PATH=/usr/bin/ffmpeg  # Explicit path to FFmpeg
+
 EXPOSE 3000
 
 CMD ["npm", "start"]
