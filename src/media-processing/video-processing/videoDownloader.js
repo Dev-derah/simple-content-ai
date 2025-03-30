@@ -2,13 +2,13 @@ const { exec } = require("child_process");
 const ytdl = require("youtube-dl-exec");
 const path = require("path");
 const fs = require("fs").promises;
-const ffmpeg = require("@ffmpeg-installer/ffmpeg");
 const config = require("../../../config");
 
 class VideoDownloader {
   constructor(downloadBasePath, id) {
     // Base download directory
     this.basePath = path.resolve(downloadBasePath, id);
+    this.ffmpegPath = process.env.FFMPEG_PATH || "ffmpeg";
   }
 
   async ensureDirectories() {
@@ -27,7 +27,7 @@ class VideoDownloader {
         try {
           const result = await ytdl(videoUrl, {
             output: videoFilePath,
-            ffmpegLocation: ffmpeg.path,
+            ffmpegLocation: this.ffmpegPath,
             format:
               "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best",
             mergeOutputFormat: "mp4",

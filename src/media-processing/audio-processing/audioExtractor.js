@@ -1,7 +1,6 @@
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 const path = require("path");
-const ffmpeg = require("@ffmpeg-installer/ffmpeg");
 const fs = require("fs").promises;
 
 const execFileAsync = promisify(execFile);
@@ -15,6 +14,7 @@ class AudioExtractor {
     try {
       await fs.mkdir(this.outputDir, { recursive: true });
       const outputPath = path.join(this.outputDir, `${filename}.wav`);
+      this.ffmpegPath = process.env.FFMPEG_PATH || "ffmpeg";
 
       // Verify input file exists
       await fs.access(videoPath);
@@ -38,9 +38,20 @@ class AudioExtractor {
         outputPath,
       ];
 
-      console.log("Executing ffmpeg with args:", [ffmpeg.path, ...args]);
 
-      const { stderr } = await execFileAsync(ffmpeg.path, args);
+
+      const { stderr } = await execFileAsync(this.ffmpegPath, [
+        "-i",
+        videoPath,
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-c:a",
+        "pcm_s16le",
+        outputPath,
+      ]);;
 
       // Verify output file was created
       const stats = await fs.stat(outputPath);

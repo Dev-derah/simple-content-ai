@@ -10,7 +10,6 @@
     "postinstall": "npx playwright install chromium --force"
   },
   "dependencies": {
-    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@google/generative-ai": "^0.24.0",
     "axios": "^1.8.1",
     "cors": "^2.8.5",
