@@ -8,7 +8,7 @@ RUN apt-get update && \
     libx265-dev \
     libvpx-dev \
     libopus-dev \
-    libgconf-2-4 \  # Needed for cookie handling
+    libgconf-2-4 \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Verify critical installations
