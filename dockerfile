@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/playwright:v1.38.1-jammy
 
-# 1. Install system dependencies (including proper FFmpeg)
+# 1. Install system dependencies (including proper FFmpeg and cookie support)
 RUN apt-get update && \
     apt-get install -y \
     ffmpeg \
@@ -8,29 +8,38 @@ RUN apt-get update && \
     libx265-dev \
     libvpx-dev \
     libopus-dev \
+    libgconf-2-4 \  # Needed for cookie handling
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Verify FFmpeg installation
-RUN ffmpeg -version
+# 2. Verify critical installations
+RUN ffmpeg -version && \
+    echo "Playwright browsers:" && ls /ms-playwright
 
 WORKDIR /app
 
 # 3. Copy package files first for caching
 COPY package*.json ./
 
-# 4. Install npm dependencies
-RUN npm ci --only=production --no-optional
+# 4. Install npm dependencies (with retries for reliability)
+RUN npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm ci --only=production --no-optional
 
 # 5. Install Playwright browsers
 RUN npx playwright install --with-deps
 
-# 6. Copy application code
+# 6. Create directory for YouTube cookies (will be mounted by Render)
+RUN mkdir -p /etc/secrets && \
+    chmod 755 /etc/secrets
+
+# 7. Copy application code
 COPY . .
 
-# 7. Environment variables
+# 8. Environment variables
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV NODE_ENV=production
-ENV FFMPEG_PATH=/usr/bin/ffmpeg 
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
+ENV YOUTUBE_COOKIES_FILE=/etc/secrets/youtube_cookies  # Default path for Render
 
 EXPOSE 3000
 
