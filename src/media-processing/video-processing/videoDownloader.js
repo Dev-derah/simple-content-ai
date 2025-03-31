@@ -82,7 +82,7 @@ class VideoDownloader {
 
   async downloadVideo(videoUrl, filename) {
     let retries = 2;
-
+    console.log("YOUTUBE COOKIES ==>",this.youtubeCookiesPath)
     while (retries >= 0) {
       try {
         await this.ensureDirectories();
