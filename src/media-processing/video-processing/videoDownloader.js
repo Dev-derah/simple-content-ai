@@ -9,7 +9,7 @@
 //     // Base download directory
 //     this.basePath = path.resolve(downloadBasePath, id);
 //     this.ffmpegPath = process.env.FFMPEG_PATH || "ffmpeg";
-    
+
 //   }
 
 //   async ensureDirectories() {
@@ -56,8 +56,6 @@
 
 // module.exports = VideoDownloader;
 
-
-
 const { exec } = require("child_process");
 const ytdl = require("youtube-dl-exec");
 const path = require("path");
@@ -71,7 +69,8 @@ class VideoDownloader {
     this.ffmpegPath = process.env.FFMPEG_PATH || "ffmpeg";
 
     // YouTube-specific configuration
-    this.youtubeCookiesPath = process.env.YOUTUBE_COOKIES_FILE;
+    this.youtubeCookiesPath =
+      config.youtube_cookies || "/etc/secrets/youtube_cookies.txt";
     this.isYouTubeLink = (url) =>
       url.includes("youtube.com") || url.includes("youtu.be");
   }
