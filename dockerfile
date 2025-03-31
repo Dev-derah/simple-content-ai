@@ -20,10 +20,9 @@ WORKDIR /app
 # 3. Copy package files first for caching
 COPY package*.json ./
 
-# 4. Install npm dependencies (with retries for reliability)
-RUN npm config set fetch-retries 5 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm ci --only=production --no-optional
+# 4. Install npm dependencies
+RUN npm ci --only=production --no-optional
+
 
 # 5. Install Playwright browsers
 RUN npx playwright install --with-deps
