@@ -170,6 +170,7 @@ class YouTubeScraper extends BaseScraper {
         videoUrl,
         videoId
       );
+            console.warn("media", media)
 
       return [
         {
