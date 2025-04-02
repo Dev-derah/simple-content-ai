@@ -60,7 +60,7 @@
 const ytdl = require("youtube-dl-exec");
 const path = require("path");
 const fs = require("fs").promises;
-const config = require("../../../config");
+const config = require("../config/index");
 
 class VideoDownloader {
   constructor(downloadBasePath, id) {
