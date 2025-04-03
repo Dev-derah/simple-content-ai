@@ -201,6 +201,7 @@ async function downloadAndProcessMedia(instanceFolder, videoUrl, videoId) {
         throw new Error("Downloaded file too small (likely incomplete)");
       }
 
+      console.warn(" // Process audio===>>>>>>");
       // Process audio
       const { audioPath, transcript } = await processAudio(
         videoPath,

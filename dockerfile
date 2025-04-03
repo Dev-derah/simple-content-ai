@@ -38,7 +38,7 @@ COPY . .
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV NODE_ENV=production
 ENV FFMPEG_PATH=/usr/bin/ffmpeg
-ENV YOUTUBE_COOKIES_FILE=/etc/secrets/youtube_cookies 
+ENV YOUTUBE_COOKIES_FILE=/etc/secrets/youtube_cookies.txt
 
 EXPOSE 3000
 

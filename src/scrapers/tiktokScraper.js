@@ -147,7 +147,7 @@ class TikTokScraper extends BaseScraper {
   }
 
   async extractVideoUrls(contentType, limit) {
-    await this.page.waitForSelector(this.selectors.LIKES, { timeout: 15000 });
+    await this.page.waitForSelector(this.selectors.LIKES, { timeout: 150000 });
 
     if (contentType === "video") {
       const url = await this.page.url();
