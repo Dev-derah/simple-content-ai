@@ -70,7 +70,7 @@ class VideoDownloader {
 
     // YouTube-specific configuration
     this.youtubeCookiesPath =
-      config.youtube_cookies || "/etc/secrets/youtube_cookies.txt";
+      "/etc/secrets/youtube_cookies.txt";
     this.isYouTubeLink = (url) =>
       url.includes("youtube.com") || url.includes("youtu.be");
   }
