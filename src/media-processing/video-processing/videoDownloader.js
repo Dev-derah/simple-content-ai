@@ -196,7 +196,6 @@ class VideoDownloader {
             output: videoFilePath,
             ffmpegLocation: this.ffmpegPath,
             format: "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best",
-            noWriteCookies: true,
             verbose: true,
             forceIpv4: true,
             socketTimeout: 30000,
@@ -204,6 +203,9 @@ class VideoDownloader {
               "referer:youtube.com",
               "user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             ],
+            writeCookies: false,
+            markWatched: false,
+            cacheDir: false, 
           };
 
           if (cookiePath) {
