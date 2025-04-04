@@ -276,9 +276,10 @@ class VideoDownloader {
       const content = await fs.readFile(cookiePath, "utf8");
       await fs.writeFile(this.tempCookiePath, content);
 
+
       const isValid = content.match(/LOGIN_INFO|SID|SSID/);
       console.log(`Cookie content check: ${isValid ? "VALID" : "INVALID"}`);
-      console.log("First 200 chars:", content.substring(0, 200));
+      console.log("First 200 chars:", content.substring(0, 500));
 
       return this.tempCookiePath;
     } catch (error) {
@@ -305,11 +306,15 @@ class VideoDownloader {
           const downloadOptions = {
             output: videoFilePath,
             ffmpegLocation: this.ffmpegPath,
+            cookiesFromBrowser: "chrome",
             format: "(bestvideo[vcodec^=avc1][ext=mp4]+bestaudio)/best",
             postprocessorArgs: ["-c", "copy"],
             verbose: true,
             noCheckCertificates: true,
             socketTimeout: 30000,
+            ignoreErrors: true,
+            mergeOutputFormat: "mp4",
+
             addHeader: [
               "referer:youtube.com",
               "user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
