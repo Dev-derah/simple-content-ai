@@ -31,6 +31,7 @@ async function main() {
 
     // Process videos
     for (const video of videos) {
+      console.log("video is ===>", video);
       try {
         // Ensure we have the required content for repurposing
         if (!video.transcript && !video.text && !video.caption) {

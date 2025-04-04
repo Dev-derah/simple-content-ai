@@ -102,6 +102,7 @@ async function processVideos(videos, repurposer, targetPlatforms, options) {
   const results = [];
 
   for (const video of videos) {
+    console.log('video to process ===>', video)
     try {
       if (!video.transcript && !video.text && !video.caption) {
         console.warn(`Skipping video ${video.url} - No content`);

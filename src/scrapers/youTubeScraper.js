@@ -283,6 +283,62 @@ class YouTubeScraper extends BaseScraper {
     this.youtube = google.youtube({ version: "v3", auth: this.apiKey });
   }
 
+  // async scrape(input) {
+  //   try {
+  //     if (!input?.sanitized) {
+  //       throw new Error("Invalid input: Missing sanitized URL.");
+  //     }
+
+  //     const videoUrl = input.sanitized;
+  //     const videoId = this.extractVideoId(videoUrl);
+  //     if (!videoId) throw new Error("Invalid YouTube URL");
+
+  //     await this.createFolderStructure();
+
+  //     const [metadata, media] = await Promise.all([
+  //       this.getMetadata(videoId),
+  //       downloadAndProcessMedia(this.instanceFolder, videoUrl, videoId).catch(
+  //         (error) => {
+  //           console.error("Download failed:", error);
+  //           throw new Error(`Download failed: ${error.message}`);
+  //         }
+  //       ),
+  //     ]);
+
+  //     if (!metadata) throw new Error("Failed to fetch metadata");
+
+  //     await fs.writeFile(
+  //       path.join(this.instanceFolder, "metadata", `${videoId}.json`),
+  //       JSON.stringify(metadata, null, 2)
+  //     );
+
+  //     return [
+  //       {
+  //         ...metadata,
+  //         videoId,
+  //         videoPath: media.videoPath,
+  //         audioPath: media.audioPath,
+  //         _debug: {
+  //           cookiesUsed: !!config.youtube_cookies,
+  //           cookiePath: config.youtube_cookies,
+  //         },
+  //       },
+  //     ];
+  //   } catch (error) {
+  //     console.error("YouTube scraping failed:", error);
+  //     return [
+  //       {
+  //         error: error.message,
+  //         url: input?.sanitized,
+  //         _debug: {
+  //           cookieCheck: await this.checkCookies(),
+  //           timestamp: new Date().toISOString(),
+  //         },
+  //       },
+  //     ];
+  //   }
+  // }
+
   async scrape(input) {
     try {
       if (!input?.sanitized) {
@@ -307,17 +363,23 @@ class YouTubeScraper extends BaseScraper {
 
       if (!metadata) throw new Error("Failed to fetch metadata");
 
+      // 👇 Merge media details into metadata BEFORE saving
+      const enrichedMetadata = {
+        ...metadata,
+        videoId,
+        videoPath: media.videoPath,
+        audioPath: media.audioPath,
+        transcript: media.transcript,
+      };
+
       await fs.writeFile(
         path.join(this.instanceFolder, "metadata", `${videoId}.json`),
-        JSON.stringify(metadata, null, 2)
+        JSON.stringify(enrichedMetadata, null, 2)
       );
 
       return [
         {
-          ...metadata,
-          videoId,
-          videoPath: media.videoPath,
-          audioPath: media.audioPath,
+          ...enrichedMetadata,
           _debug: {
             cookiesUsed: !!config.youtube_cookies,
             cookiePath: config.youtube_cookies,

@@ -306,9 +306,7 @@ class VideoDownloader {
           const downloadOptions = {
             output: videoFilePath,
             ffmpegLocation: this.ffmpegPath,
-            cookiesFromBrowser: "chrome",
             format: "(bestvideo[vcodec^=avc1][ext=mp4]+bestaudio)/best",
-            postprocessorArgs: ["-c", "copy"],
             verbose: true,
             noCheckCertificates: true,
             socketTimeout: 30000,

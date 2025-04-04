@@ -28,6 +28,7 @@ class ContentRepurposer {
   }
 
   async processContent(contentData, options = {}) {
+    console.log("processContent====>");
     try {
  
       const requestedPlatforms = this.validatePlatforms(options.platforms);
