@@ -210,7 +210,7 @@ GET /api/v1/content/regenerate
   ],
   "customPromptUsed": true
 }
-
+```
 ---
 
 ## ✅ Best Practices
@@ -230,7 +230,7 @@ module.exports = {
   defaultLimit: 10,
   platforms: ["tiktok", "youtube", "instagram", "twitter"],
 };
-```
+
 
 ---
 
