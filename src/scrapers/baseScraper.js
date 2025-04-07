@@ -17,17 +17,6 @@ class BaseScraper {
     this.instanceFolder = this.createInstanceFolder();
   }
 
-  // async initialize() {
-  //   this.browser = await chromium.launch({
-  //     headless: true,
-  //     args: [
-  //       "--no-sandbox",
-  //       "--disable-setuid-sandbox",
-  //       "--disable-dev-shm-usage",
-  //     ],
-  //   });
-  // }
-
   async initialize() {
     this.browser = await chromium.launch({
       headless: true,
