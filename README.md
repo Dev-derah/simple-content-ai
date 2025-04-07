@@ -1,5 +1,4 @@
 # **Simple Content AI**
-# **Simple Content AI**
 
 📢 **Automatically scrape and repurpose content from social media platforms with AI-driven optimization.**
 📢 **Automatically scrape and repurpose content from social media platforms with AI-driven optimization.**
