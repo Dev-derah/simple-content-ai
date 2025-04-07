@@ -220,23 +220,12 @@ GET /api/v1/content/regenerate
 - Use the `.env` file to adjust scraper behavior without editing code
 - Transcriptions are saved and reused to reduce processing cost
 
----
-
-
-## **📌 Configuration**  
-Modify the **`config.js`** file to adjust settings dynamically. Example:
-```javascript
-module.exports = {
-  defaultLimit: 10,
-  platforms: ["tiktok", "youtube", "instagram", "twitter"],
-};
-
 
 ---
 
 ## **🛠 Future Improvements**  
 🚀 **Add support for more platforms** (Facebook, LinkedIn, Reddit, etc.).  
-📊 **Improve content repurposing AI** (Use GPT models for better output).  
+📊 **Improve content repurposing AI**.  
 📅 **Automated scheduling** (Post directly to social media).  
 
 ---
