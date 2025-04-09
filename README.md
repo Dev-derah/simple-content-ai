@@ -1,7 +1,8 @@
 # **Simple Content AI**
 
 📢 **Automatically scrape and repurpose content from social media platforms with AI-driven optimization.**
-📢 **Automatically scrape and repurpose content from social media platforms with AI-driven optimization.**
+
+---
 
 ## **📝 Overview**
 
@@ -9,20 +10,7 @@
 
 ---
 
-## **🔥 New Features**
-
-✅ **Rotating Proxy Support** – Use a `proxies.txt` file to avoid rate limits and bans  
-✅ **YouTube Cookie File Support** – Use `YouTube_cookies.txt` for authenticated scraping  
-✅ **Dockerized for Easy Deployment**  
-✅ **AI Transcription & Repurposing** with Gemini models  
-✅ **Regenerate specific platform content with custom prompts**
-## **📝 Overview**
-
-**Simple Content AI** is a Node.js + Docker-powered tool that scrapes videos from platforms like **YouTube, TikTok, Instagram, and Twitter**, then repurposes them into platform-optimized content using AI.
-
----
-
-## **🔥 New Features**
+## **🔥 Features**
 
 ✅ **Rotating Proxy Support** – Use a `proxies.txt` file to avoid rate limits and bans  
 ✅ **YouTube Cookie File Support** – Use `YouTube_cookies.txt` for authenticated scraping  
@@ -31,8 +19,6 @@
 ✅ **Regenerate specific platform content with custom prompts**
 
 ---
-
-## **📁 Project Structure**
 
 ## **📁 Project Structure**
 
@@ -88,17 +74,7 @@ NODE_ENV=production
 FFMPEG_PATH=/usr/bin/ffmpeg
 ## **⚙️ Environment Variables (.env)**
 
-Create a `.env` file with the following:
-
 ```
-HEADLESS=true
-DOWNLOAD_PATH=./downloads
-GEMINI_API_KEY=your_gemini_api_key
-YOUTUBE_API_KEY=your_youtube_api_key
-NODE_ENV=production
-FFMPEG_PATH=/usr/bin/ffmpeg
-```
-
 ---
 
 ## **🧱 Required Files**
@@ -106,7 +82,7 @@ FFMPEG_PATH=/usr/bin/ffmpeg
 Place these files in your project root:
 
 - `proxies.txt` – List of proxies, one per line (e.g., `http://user:pass@ip:port`)
-- `YouTube_cookies.txt` – Exported cookies file from your browser for YouTube
+- `youTube_cookies.txt` – Exported cookies file from your browser for YouTube
 
 ---
 
@@ -140,49 +116,8 @@ ENV YOUTUBE_COOKIES_FILE=/etc/secrets/youtube_cookies.txt
 EXPOSE 3000
 CMD ["npm", "start"]
 ```
-## **🧱 Required Files**
-
-Place these files in your project root:
-
-- `proxies.txt` – List of proxies, one per line (e.g., `http://user:pass@ip:port`)
-- `YouTube_cookies.txt` – Exported cookies file from your browser for YouTube
-
 ---
 
-## **🐳 Docker Setup**
-
-**Dockerfile Overview** (already present):
-
-```Dockerfile
-FROM mcr.microsoft.com/playwright:v1.38.1-jammy
-
-RUN apt-get update && \
-    apt-get install -y ffmpeg libx264-dev libx265-dev libvpx-dev libopus-dev libgconf-2-4 && \
-    rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --only=production --no-optional
-
-RUN npx playwright install --with-deps
-
-RUN mkdir -p /etc/secrets && chmod 755 /etc/secrets
-
-COPY . .
-
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-ENV NODE_ENV=production
-ENV FFMPEG_PATH=/usr/bin/ffmpeg
-ENV YOUTUBE_COOKIES_FILE=/etc/secrets/youtube_cookies.txt
-
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
----
-
-## **🚀 Run with Docker**
 
 ## **🚀 Run with Docker**
 
@@ -199,8 +134,9 @@ docker run --env-file .env -v $(pwd)/YouTube_cookies.txt:/etc/secrets/youtube_co
 
 ### ▶️ Repurpose Content from URL
 
-```json
 POST /api/v1/content
+```json
+
 
 {
   "url": "https://www.youtube.com/watch?v=Y9kg_YS-M9k",
@@ -255,9 +191,9 @@ Here’s a sample response you can expect when repurposing content:
 
 
 ### ✍️ Regenerate for Specific Platform with Prompt
-
-```json
 GET /api/v1/content/regenerate
+```json
+
 
 {
   "text": "CREATE CONTECT LIKE THIS BECAUSE TAILWIND NO LONGER NEEDS A CONFIG FILE...",
@@ -321,6 +257,4 @@ This project is licensed under the **MIT License**.
 
 ## **🙌 Acknowledgments**  
 Built by **derah** 🚀  
-Built by **derah** 🚀  
-
 ---
